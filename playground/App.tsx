@@ -199,7 +199,7 @@ function ProfileSearch() {
   )
   const { data: rawFacetData } = useGridQuery<Record<string, { _count: number }>>(
     facetQuery?.query ?? '',
-    undefined,
+    profileFilters as Record<string, unknown>,
     { enabled: !!facetQuery },
   )
   const facetCounts = useMemo(
