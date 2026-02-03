@@ -1,5 +1,5 @@
 {
-  "name": "grid-kit",
+  "name": "@the-grid-data/gridkit",
   "version": "0.1.0",
   "type": "module",
   "sideEffects": false,

@@ -1,4 +1,4 @@
-# Publishing grid-kit
+# Publishing @the-grid-data/gridkit
 
 ## One-time setup
 
@@ -13,7 +13,7 @@
 ### GitHub secret
 
 1. Go to https://www.npmjs.com → Access Tokens → Generate New Token → **Granular Access Token**
-2. Set permission to **Read and Write** for the `grid-kit` package
+2. Set permission to **Read and Write** for the `@the-grid-data/gridkit` package
 3. In the GitHub repo, go to **Settings → Secrets and variables → Actions → New repository secret**
 4. Name: `NPM_TOKEN`, Value: the token from step 2
 
