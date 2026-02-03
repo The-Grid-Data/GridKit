@@ -44,7 +44,7 @@
 
 - `src/core/types.ts` -- GridConfig interface (endpoint, apiKey?, headers?)
 - `src/core/client.ts` -- createGridClient(config) using Graffle.create
-- `src/core/query-keys.ts` -- gridKeys factory (all, graphql, companies, company, searches, search)
+- `src/core/query-keys.ts` -- gridKeys factory (all, graphql, profiles, profile, searches, search)
 - `src/core/index.ts` -- re-export all core
 - `src/components/GridProvider.tsx` -- GridContext + GridProvider + useGridConfig hook
 - `src/components/index.ts` -- re-export GridProvider, useGridConfig
@@ -89,7 +89,7 @@
 
 ---
 
-## Task 5: Pre-built hooks -- useGridCompany, useGridSearch
+## Task 5: Pre-built hooks -- useGridProfile, useGridSearch
 
 **Goal:** Domain-specific convenience hooks on top of the core.
 
@@ -97,31 +97,31 @@
 
 **Do:**
 
-- `src/hooks/useGridCompany.ts` -- fetch single company by ID, staleTime 5min, supports enabled pattern
+- `src/hooks/useGridProfile.ts` -- fetch single profile by ID, staleTime 5min, supports enabled pattern
 - `src/hooks/useGridSearch.ts` -- search products/assets by text, staleTime 1min
 - `src/hooks/useInvalidateGrid.ts` -- cache invalidation utility using gridKeys
-- `src/hooks/usePrefetchGridCompany.ts` -- prefetch on hover using queryOptions factory
-- Export queryOptions factories for SSR (gridCompanyQueryOptions)
+- `src/hooks/usePrefetchGridProfile.ts` -- prefetch on hover using queryOptions factory
+- Export queryOptions factories for SSR (gridProfileQueryOptions)
 - Re-export from `hooks/index.ts`
 
-**Test:** Build passes. Test in playground with real company IDs from The Grid (use MCP `mcp__grid__find` to discover valid IDs).
+**Test:** Build passes. Test in playground with real profile IDs from The Grid (use MCP `mcp__grid__find` to discover valid IDs).
 
 ---
 
 ## Task 6: ThumbnailHoverCard component
 
-**Goal:** Hover card that shows company info. Uses the hooks from task 5.
+**Goal:** Hover card that shows profile info. Uses the hooks from task 5.
 
 **Read:** `docs/research/tanstack_query_v5_best_practices.md` (prefetch section)
 
 **Do:**
 
-- `src/components/ThumbnailHoverCard.tsx` -- accepts companyId, shows thumbnail/name, prefetches on mouseenter, shows details on hover
-- Uses useGridCompany + usePrefetchGridCompany
+- `src/components/ThumbnailHoverCard.tsx` -- accepts profileId, shows thumbnail/name, prefetches on mouseenter, shows details on hover
+- Uses useGridProfile + usePrefetchGridProfile
 - Minimal styles (inline or CSS module, zero external CSS deps)
 - Add to playground for manual testing
 
-**Test:** Visible in playground. Hover triggers data fetch, card displays company info.
+**Test:** Visible in playground. Hover triggers data fetch, card displays profile info.
 
 ---
 

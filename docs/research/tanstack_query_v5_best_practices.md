@@ -44,10 +44,10 @@ provide sensible defaults.
 ```typescript
 // RECOMMENDED: Library hook with a sensible default staleTime
 // that consumers can override
-export function useGridCompany(id: string, options?: { staleTime?: number }) {
+export function useGridProfile(id: string, options?: { staleTime?: number }) {
   return useQuery({
-    queryKey: ['grid', 'company', id],
-    queryFn: () => fetchCompany(id),
+    queryKey: ['grid', 'profile', id],
+    queryFn: () => fetchProfile(id),
     staleTime: options?.staleTime ?? 30_000, // 30 seconds default
     // Let consumers override but don't use 0 -- it causes excessive
     // refetching which is unfriendly for a library
@@ -59,7 +59,7 @@ export function useGridCompany(id: string, options?: { staleTime?: number }) {
 
 | Data Category | Recommended staleTime | Rationale |
 |---------------|----------------------|-----------|
-| Rarely changing (company profiles, metadata) | `5 * 60 * 1000` (5 min) | Company data doesn't change frequently |
+| Rarely changing (profiles, metadata) | `5 * 60 * 1000` (5 min) | Profile data doesn't change frequently |
 | Moderately changing (lists, search results) | `60 * 1000` (1 min) | Balance freshness vs. network cost |
 | Frequently changing (real-time metrics) | `0` to `10_000` | Needs to be fresh |
 | Static/reference data (enums, schemas) | `Infinity` | Never refetch automatically |
@@ -112,10 +112,10 @@ Query keys are arrays, and invalidation works on prefix matching.
 
 export const gridKeys = {
   all: ['grid'] as const,
-  companies: () => [...gridKeys.all, 'company'] as const,
-  company: (id: string) => [...gridKeys.companies(), id] as const,
-  companyDetail: (id: string) => [...gridKeys.company(id), 'detail'] as const,
-  companyMetrics: (id: string) => [...gridKeys.company(id), 'metrics'] as const,
+  profiles: () => [...gridKeys.all, 'profile'] as const,
+  profile: (id: string) => [...gridKeys.profiles(), id] as const,
+  profileDetail: (id: string) => [...gridKeys.profile(id), 'detail'] as const,
+  profileMetrics: (id: string) => [...gridKeys.profile(id), 'metrics'] as const,
 
   searches: () => [...gridKeys.all, 'search'] as const,
   search: (query: string, filters?: Record<string, unknown>) =>
@@ -138,11 +138,11 @@ const queryClient = useQueryClient();
 // Invalidate ALL grid-kit queries
 queryClient.invalidateQueries({ queryKey: gridKeys.all });
 
-// Invalidate all company queries
-queryClient.invalidateQueries({ queryKey: gridKeys.companies() });
+// Invalidate all profile queries
+queryClient.invalidateQueries({ queryKey: gridKeys.profiles() });
 
-// Invalidate a specific company
-queryClient.invalidateQueries({ queryKey: gridKeys.company('abc-123') });
+// Invalidate a specific profile
+queryClient.invalidateQueries({ queryKey: gridKeys.profile('abc-123') });
 ```
 
 ### 2.2 invalidateQueries
@@ -150,7 +150,7 @@ queryClient.invalidateQueries({ queryKey: gridKeys.company('abc-123') });
 `invalidateQueries` marks matching queries as stale and triggers a refetch for
 any that are currently mounted. Key behaviors:
 
-- **Prefix matching by default**: `queryKey: ['grid']` invalidates `['grid', 'company', '123']`.
+- **Prefix matching by default**: `queryKey: ['grid']` invalidates `['grid', 'profile', '123']`.
 - **exact: true** option disables prefix matching.
 - Returns a Promise that resolves when all active queries finish refetching.
 
@@ -162,8 +162,8 @@ export function useInvalidateGrid() {
   return {
     invalidateAll: () =>
       queryClient.invalidateQueries({ queryKey: gridKeys.all }),
-    invalidateCompany: (id: string) =>
-      queryClient.invalidateQueries({ queryKey: gridKeys.company(id) }),
+    invalidateProfile: (id: string) =>
+      queryClient.invalidateQueries({ queryKey: gridKeys.profile(id) }),
   };
 }
 ```
@@ -174,26 +174,26 @@ For mutations that affect cached data, TanStack Query supports optimistic
 updates via `onMutate`, `onError`, and `onSettled`:
 
 ```typescript
-export function useUpdateCompany() {
+export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { id: string; updates: Partial<Company> }) =>
-      updateCompany(data.id, data.updates),
+    mutationFn: (data: { id: string; updates: Partial<Profile> }) =>
+      updateProfile(data.id, data.updates),
 
     onMutate: async (data) => {
       // Cancel any outgoing refetches so they don't overwrite optimistic update
       await queryClient.cancelQueries({
-        queryKey: gridKeys.company(data.id),
+        queryKey: gridKeys.profile(data.id),
       });
 
       // Snapshot previous value
-      const previous = queryClient.getQueryData(gridKeys.companyDetail(data.id));
+      const previous = queryClient.getQueryData(gridKeys.profileDetail(data.id));
 
       // Optimistically update
       queryClient.setQueryData(
-        gridKeys.companyDetail(data.id),
-        (old: Company) => ({ ...old, ...data.updates })
+        gridKeys.profileDetail(data.id),
+        (old: Profile) => ({ ...old, ...data.updates })
       );
 
       return { previous };
@@ -203,7 +203,7 @@ export function useUpdateCompany() {
       // Roll back on error
       if (context?.previous) {
         queryClient.setQueryData(
-          gridKeys.companyDetail(data.id),
+          gridKeys.profileDetail(data.id),
           context.previous
         );
       }
@@ -212,7 +212,7 @@ export function useUpdateCompany() {
     onSettled: (_data, _err, variables) => {
       // Always refetch after mutation settles
       queryClient.invalidateQueries({
-        queryKey: gridKeys.company(variables.id),
+        queryKey: gridKeys.profile(variables.id),
       });
     },
   });
@@ -255,7 +255,7 @@ This is the single most important architectural decision. Here is why:
 // grid-kit/src/index.ts
 
 // DO export hooks that use useQuery/useMutation internally
-export { useGridCompany } from './hooks/useGridCompany';
+export { useGridProfile } from './hooks/useGridProfile';
 export { useGridSearch } from './hooks/useGridSearch';
 export { useGridQuery } from './hooks/useGridQuery';
 
@@ -263,7 +263,7 @@ export { useGridQuery } from './hooks/useGridQuery';
 export { gridKeys } from './query-keys';
 
 // DO export types
-export type { GridCompany, GridQueryOptions } from './types';
+export type { GridProfile, GridQueryOptions } from './types';
 
 // DO NOT export or create a QueryClient
 // DO NOT wrap anything in QueryClientProvider
@@ -274,7 +274,7 @@ export type { GridCompany, GridQueryOptions } from './types';
 ```tsx
 // In the consumer's app
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGridCompany } from '@thegrid/grid-kit';
+import { useGridProfile } from '@thegrid/grid-kit';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -340,12 +340,12 @@ type GridQueryOptions<T> = Omit<
   // Library-specific options
 };
 
-export function useGridCompany(
+export function useGridProfile(
   id: string,
-  options?: GridQueryOptions<Company>
+  options?: GridQueryOptions<Profile>
 ) {
   return useQuery({
-    queryKey: gridKeys.company(id),
+    queryKey: gridKeys.profile(id),
     queryFn: () => gridClient.query(COMPANY_QUERY, { id }),
     staleTime: 5 * 60 * 1000,
     ...options, // Consumer can override staleTime, enabled, select, etc.
@@ -448,12 +448,12 @@ Always support conditional fetching via the `enabled` option. This is
 critical for hooks that depend on data from other hooks:
 
 ```typescript
-export function useGridCompany(
+export function useGridProfile(
   id: string | undefined,
-  options?: GridQueryOptions<Company>
+  options?: GridQueryOptions<Profile>
 ) {
   return useQuery({
-    queryKey: gridKeys.company(id!),
+    queryKey: gridKeys.profile(id!),
     queryFn: () => gridClient.query(COMPANY_QUERY, { id: id! }),
     enabled: !!id && (options?.enabled !== false),
     // ^ Only fetch when id is defined AND consumer hasn't disabled it
@@ -485,17 +485,17 @@ key strategies:
 
 ```typescript
 // Option 1: Operation name + variables (RECOMMENDED)
-queryKey: ['grid', 'graphql', 'GetCompany', { id: '123' }]
+queryKey: ['grid', 'graphql', 'GetProfile', { id: '123' }]
 
 // Option 2: Query hash + variables (for anonymous queries)
 queryKey: ['grid', 'graphql', hashQuery(queryString), variables]
 
 // Option 3: Domain-based (for pre-built hooks)
-queryKey: ['grid', 'company', '123']
+queryKey: ['grid', 'profile', '123']
 ```
 
 **Recommendation**: Use Option 1 for the generic `useGridGraphQL` hook, and
-Option 3 for domain-specific hooks like `useGridCompany`.
+Option 3 for domain-specific hooks like `useGridProfile`.
 
 ### 4.3 Graffle Integration
 
@@ -569,9 +569,9 @@ follow these rules:
 // Export queryOptions factories (TanStack Query v5 pattern)
 import { queryOptions } from '@tanstack/react-query';
 
-export function gridCompanyQueryOptions(id: string) {
+export function gridProfileQueryOptions(id: string) {
   return queryOptions({
-    queryKey: gridKeys.company(id),
+    queryKey: gridKeys.profile(id),
     queryFn: () => gridClient.query(COMPANY_QUERY, { id }),
     staleTime: 5 * 60 * 1000,
   });
@@ -583,15 +583,15 @@ export function gridCompanyQueryOptions(id: string) {
 ```typescript
 // Next.js App Router example
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { gridCompanyQueryOptions } from '@thegrid/grid-kit';
+import { gridProfileQueryOptions } from '@thegrid/grid-kit';
 
-export default async function CompanyPage({ params }) {
+export default async function ProfilePage({ params }) {
   const queryClient = new QueryClient();
-  await queryClient.prefetchQuery(gridCompanyQueryOptions(params.id));
+  await queryClient.prefetchQuery(gridProfileQueryOptions(params.id));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <CompanyView id={params.id} />
+      <ProfileView id={params.id} />
     </HydrationBoundary>
   );
 }
@@ -599,20 +599,20 @@ export default async function CompanyPage({ params }) {
 
 ### 5.2 Prefetching Patterns
 
-For client-side prefetching (e.g., hovering over a company thumbnail):
+For client-side prefetching (e.g., hovering over a profile thumbnail):
 
 ```typescript
-export function usePrefetchGridCompany() {
+export function usePrefetchGridProfile() {
   const queryClient = useQueryClient();
 
   return (id: string) => {
-    queryClient.prefetchQuery(gridCompanyQueryOptions(id));
+    queryClient.prefetchQuery(gridProfileQueryOptions(id));
   };
 }
 
 // Usage in the thumbnail component:
-function CompanyThumbnail({ id }: { id: string }) {
-  const prefetch = usePrefetchGridCompany();
+function ProfileThumbnail({ id }: { id: string }) {
+  const prefetch = usePrefetchGridProfile();
 
   return (
     <div onMouseEnter={() => prefetch(id)}>
@@ -622,7 +622,7 @@ function CompanyThumbnail({ id }: { id: string }) {
 }
 ```
 
-This is directly relevant to grid-kit's "thumbnail hover to display company
+This is directly relevant to grid-kit's "thumbnail hover to display profile
 information" use case.
 
 ---
@@ -709,7 +709,7 @@ far smaller than Apollo, much more feature-rich than SWR.
 | @tanstack/react-query | peerDependency | Prevent duplicates, consumer controls version |
 | Configuration | GridProvider context | Separate concern from query caching |
 | Query keys | Factory pattern with 'grid' prefix | Enables prefix-based invalidation, namespacing |
-| Default staleTime | 5 min for entities, 1 min for lists | Company data is relatively stable |
+| Default staleTime | 5 min for entities, 1 min for lists | Profile data is relatively stable |
 | GraphQL cache | Document cache (TanStack default) | Simpler, sufficient for read-heavy use case |
 | SSR support | Export queryOptions factories | Consumers can prefetch in server components |
 | Bundle format | ESM + CJS via tsup/bun build | Maximum compatibility |
@@ -721,12 +721,12 @@ The package should export:
 ```typescript
 // Hooks
 export { useGridQuery } from './hooks/useGridQuery';         // Generic GraphQL hook
-export { useGridCompany } from './hooks/useGridCompany';     // Pre-built company hook
+export { useGridProfile } from './hooks/useGridProfile';     // Pre-built profile hook
 export { useGridSearch } from './hooks/useGridSearch';        // Pre-built search hook
-export { usePrefetchGridCompany } from './hooks/usePrefetchGridCompany';
+export { usePrefetchGridProfile } from './hooks/usePrefetchGridProfile';
 
 // Query Options Factories (for SSR prefetching)
-export { gridCompanyQueryOptions } from './hooks/useGridCompany';
+export { gridProfileQueryOptions } from './hooks/useGridProfile';
 
 // Query Key Factory (for consumer cache management)
 export { gridKeys } from './query-keys';
@@ -738,7 +738,7 @@ export { useInvalidateGrid } from './hooks/useInvalidateGrid';
 export { GridProvider, useGridConfig } from './GridProvider';
 
 // Components
-export { CompanyThumbnail } from './components/CompanyThumbnail';
+export { ProfileThumbnail } from './components/ProfileThumbnail';
 
 // Types
 export type { GridConfig, GridQueryOptions } from './types';
@@ -748,7 +748,7 @@ export type { GridConfig, GridQueryOptions } from './types';
 
 ```tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { GridProvider, useGridCompany, useGridQuery } from '@thegrid/grid-kit';
+import { GridProvider, useGridProfile, useGridQuery } from '@thegrid/grid-kit';
 
 const queryClient = new QueryClient();
 
@@ -764,19 +764,19 @@ function App() {
 
 function Dashboard() {
   // Pre-built hook
-  const { data: company, isLoading } = useGridCompany('abc-123');
+  const { data: profile, isLoading } = useGridProfile('abc-123');
 
   // Custom GraphQL query (copy-paste from Hasura)
   const { data: custom } = useGridQuery(`
-    query GetFunding($companyId: uuid!) {
-      funding_rounds(where: { company_id: { _eq: $companyId } }) {
+    query GetFunding($profileId: uuid!) {
+      funding_rounds(where: { company_id: { _eq: $profileId } }) {
         id
         amount
         round_type
         date
       }
     }
-  `, { companyId: 'abc-123' });
+  `, { profileId: 'abc-123' });
 
   return (/* ... */);
 }
@@ -809,9 +809,9 @@ function createWrapper() {
   );
 }
 
-test('useGridCompany fetches company data', async () => {
+test('useGridProfile fetches profile data', async () => {
   const { result } = renderHook(
-    () => useGridCompany('test-id'),
+    () => useGridProfile('test-id'),
     { wrapper: createWrapper() }
   );
 

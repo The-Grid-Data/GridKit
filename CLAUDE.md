@@ -28,14 +28,14 @@ src/
   hooks/                      -- React hooks (TanStack Query wrappers)
     index.ts
     useGridQuery.ts           -- generic: accepts raw GraphQL strings
-    useGridCompany.ts         -- pre-built company data hook
+    useGridProfile.ts         -- pre-built profile data hook
     useGridSearch.ts          -- pre-built search hook
-    usePrefetchGridCompany.ts -- prefetch on hover
+    usePrefetchGridProfile.ts -- prefetch on hover
     useInvalidateGrid.ts      -- cache invalidation utilities
   components/                 -- React components
     index.ts
     GridProvider.tsx           -- config context (endpoint, auth)
-    ThumbnailHoverCard.tsx    -- company info hover card
+    ThumbnailHoverCard.tsx    -- profile info hover card
   generated/                  -- Graffle-generated types (gitignored)
     graffle/
 ```

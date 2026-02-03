@@ -1,7 +1,7 @@
 This is an NPM package that can be installed anywhere. It's purpose is to:
 
 - hooks: query The Grid graphql endpoint, with custom graphql quries
-- components: easily render the displayed data. First component will be a thumbnail hover to display company information
+- components: easily render the displayed data. First component will be a thumbnail hover to display profile information
 
 Tools:
 
@@ -15,7 +15,7 @@ Deliverables:
 
 - npm package that can be uploaded to registry and easily imported to any project
 - hook that lets user paste a custom graphql query (same they would use on hasura) and return grid data
-- thumbnail component to display company information on hover.
+- thumbnail component to display profile information on hover.
 - storybook to test the display of the visual component
 - playground/testing environment: I need an easy way to manually test these components end to end, in a simple environment that runs on pnpm run dev
 - should be as small as possible

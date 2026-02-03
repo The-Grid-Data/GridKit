@@ -146,8 +146,8 @@ const result = await client.query.products({
 ```typescript
 export const gridKeys = {
   all: ['grid'] as const,
-  companies: () => [...gridKeys.all, 'company'] as const,
-  company: (id: string) => [...gridKeys.companies(), id] as const,
+  profiles: () => [...gridKeys.all, 'profile'] as const,
+  profile: (id: string) => [...gridKeys.profiles(), id] as const,
   searches: () => [...gridKeys.all, 'search'] as const,
   search: (query: string, vars?: Record<string, unknown>) =>
     [...gridKeys.searches(), query, vars] as const,
@@ -179,15 +179,15 @@ export function useGridQuery<TData = unknown>(
 ### Pre-built domain hook
 
 ```typescript
-export function useGridCompany(
+export function useGridProfile(
   id: string | undefined,
-  options?: Omit<UseQueryOptions<Company>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<Profile>, 'queryKey' | 'queryFn'>
 ) {
   const config = useGridConfig()
 
   return useQuery({
-    queryKey: gridKeys.company(id!),
-    queryFn: () => fetchCompany(config, id!),
+    queryKey: gridKeys.profile(id!),
+    queryFn: () => fetchProfile(config, id!),
     staleTime: 5 * 60 * 1000,
     enabled: !!id && (options?.enabled !== false),
     ...options,
@@ -198,10 +198,10 @@ export function useGridCompany(
 ### queryOptions factory (for SSR)
 
 ```typescript
-export function gridCompanyQueryOptions(config: GridConfig, id: string) {
+export function gridProfileQueryOptions(config: GridConfig, id: string) {
   return queryOptions({
-    queryKey: gridKeys.company(id),
-    queryFn: () => fetchCompany(config, id),
+    queryKey: gridKeys.profile(id),
+    queryFn: () => fetchProfile(config, id),
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -287,23 +287,23 @@ query { products_aggregate(where: { status: { _eq: "active" } }) { aggregate { c
 **When**: Building the ThumbnailHoverCard component
 
 ```typescript
-export function usePrefetchGridCompany() {
+export function usePrefetchGridProfile() {
   const queryClient = useQueryClient()
   const config = useGridConfig()
 
   return (id: string) => {
-    queryClient.prefetchQuery(gridCompanyQueryOptions(config, id))
+    queryClient.prefetchQuery(gridProfileQueryOptions(config, id))
   }
 }
 
 // In component:
-function ThumbnailHoverCard({ companyId }: { companyId: string }) {
-  const prefetch = usePrefetchGridCompany()
-  const { data } = useGridCompany(companyId)
+function ThumbnailHoverCard({ profileId }: { profileId: string }) {
+  const prefetch = usePrefetchGridProfile()
+  const { data } = useGridProfile(profileId)
 
   return (
-    <div onMouseEnter={() => prefetch(companyId)}>
-      {/* render company info */}
+    <div onMouseEnter={() => prefetch(profileId)}>
+      {/* render profile info */}
     </div>
   )
 }
