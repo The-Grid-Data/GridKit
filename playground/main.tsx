@@ -13,7 +13,7 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <GridProvider config={{ endpoint: 'https://tgs.thegrid.id/v1/graphql' }}>
+      <GridProvider config={{ endpoint: 'https://beta.node.thegrid.id/graphql' }}>
         <App />
       </GridProvider>
     </QueryClientProvider>
