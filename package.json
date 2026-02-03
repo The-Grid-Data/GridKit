@@ -51,7 +51,7 @@
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsup",
-    "dev": "vite --config playground/vite.config.ts",
+    "dev": "vite playground",
     "dev:build": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
@@ -66,10 +66,7 @@
       "optional": true
     }
   },
-  "dependencies": {
-    "graffle": "next",
-    "graphql": "^16.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "@types/react": "^19.0.0",

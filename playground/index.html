@@ -7,6 +7,16 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    window.onerror = function(msg, src, line, col, err) {
+      document.getElementById('root').innerHTML =
+        '<pre style="color:red;padding:24px">' + msg + '\n' + src + ':' + line + ':' + col + '\n' + (err && err.stack || '') + '</pre>';
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      document.getElementById('root').innerHTML =
+        '<pre style="color:red;padding:24px">Unhandled rejection:\n' + (e.reason && e.reason.stack || e.reason) + '</pre>';
+    });
+  </script>
   <script type="module" src="/main.tsx"></script>
 </body>
 </html>

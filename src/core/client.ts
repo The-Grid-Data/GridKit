@@ -1,16 +1,8 @@
-import { Graffle } from 'graffle'
 import type { GridConfig } from './types.js'
 
-function createClient(config: GridConfig) {
-  const headers: Record<string, string> = {
-    ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
-    ...config.headers,
-  }
-
-  return Graffle.create().transport({
-    url: config.endpoint,
-    headers,
-  })
+interface GraphQLResponse<TData> {
+  data?: TData
+  errors?: Array<{ message: string }>
 }
 
 export async function executeQuery<TData = unknown>(
@@ -18,7 +10,31 @@ export async function executeQuery<TData = unknown>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<TData> {
-  const client = createClient(config)
-  const result = await client.gql(query).$send(variables)
-  return result as TData
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
+    ...config.headers,
+  }
+
+  const response = await fetch(config.endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ query, variables }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`)
+  }
+
+  const json: GraphQLResponse<TData> = await response.json()
+
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((e) => e.message).join('\n'))
+  }
+
+  if (json.data === undefined) {
+    throw new Error('GraphQL response missing data')
+  }
+
+  return json.data
 }
