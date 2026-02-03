@@ -7,4 +7,5 @@ export const gridKeys = {
   searches: () => [...gridKeys.all, 'search'] as const,
   search: (query: string, vars?: Record<string, unknown>) =>
     [...gridKeys.searches(), query, vars] as const,
+  filterMetadata: () => [...gridKeys.all, 'filterMetadata'] as const,
 } as const
