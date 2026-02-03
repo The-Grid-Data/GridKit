@@ -3,6 +3,7 @@ import { keepPreviousData } from '@tanstack/react-query'
 import { useGridQuery } from '../src/hooks/useGridQuery.js'
 import { useGridFilterOptions } from '../src/hooks/useGridFilterOptions.js'
 import { buildProfileWhere } from '../src/core/filters.js'
+import { ProfileHoverCard } from '../src/components/ProfileHoverCard.js'
 import type { FilterOption } from '../src/core/types.js'
 
 const DEFAULT_QUERY = `query GetProducts {
@@ -272,7 +273,11 @@ function ProfileSearch() {
               <tbody>
                 {profiles.profileInfos.map((p: Record<string, unknown>) => (
                   <tr key={p.id as string} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '6px 8px' }}>{p.name as string}</td>
+                    <td style={{ padding: '6px 8px' }}>
+                      <ProfileHoverCard profileId={p.id as string}>
+                        <span style={{ cursor: 'default' }}>{p.name as string}</span>
+                      </ProfileHoverCard>
+                    </td>
                     <td style={{ padding: '6px 8px', color: '#666' }}>{(p.profileType as Record<string, string>)?.name ?? '—'}</td>
                     <td style={{ padding: '6px 8px', color: '#666' }}>{(p.profileSector as Record<string, string>)?.name ?? '—'}</td>
                     <td style={{ padding: '6px 8px', color: '#666' }}>{(p.profileStatus as Record<string, string>)?.name ?? '—'}</td>

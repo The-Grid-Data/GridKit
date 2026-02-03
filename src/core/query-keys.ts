@@ -8,4 +8,5 @@ export const gridKeys = {
   search: (query: string, vars?: Record<string, unknown>) =>
     [...gridKeys.searches(), query, vars] as const,
   filterMetadata: () => [...gridKeys.all, 'filterMetadata'] as const,
+  profileHover: (id: string) => [...gridKeys.all, 'profileHover', id] as const,
 } as const

@@ -9,3 +9,18 @@ export const FILTER_METADATA_QUERY = `query GetFilterMetadata {
   tagTypes(order_by: {name: Asc}) { id name }
   tags(order_by: {name: Asc}, limit: 500) { id name tagType { id name } }
 }`
+
+export const PROFILE_HOVER_QUERY = `query GetProfileHover($id: StringBoolExp!) {
+  profileInfos(where: { id: $id }, limit: 1) {
+    id
+    name
+    descriptionShort
+    tagLine
+    profileType { name }
+    profileSector { name }
+    root {
+      slug
+      media { url mediaType { name } }
+    }
+  }
+}`

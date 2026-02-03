@@ -1,6 +1,6 @@
 export { executeQuery } from './client.js'
 export { gridKeys } from './query-keys.js'
-export { FILTER_METADATA_QUERY } from './queries.js'
+export { FILTER_METADATA_QUERY, PROFILE_HOVER_QUERY } from './queries.js'
 export { buildProfileWhere } from './filters.js'
 export type { GridConfig, FilterOption, TagOption, FilterMetadata } from './types.js'
 export type { ProfileWhereFilters } from './filters.js'
