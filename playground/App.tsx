@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useGridQuery } from '../src/hooks/useGridQuery.js'
 import { useGridFilterOptions } from '../src/hooks/useGridFilterOptions.js'
-import { buildProfileWhere } from '../src/core/filters.js'
+import { buildProfileWhere, buildFacetCountQuery } from '../src/core/filters.js'
 import { ProfileHoverCard } from '../src/components/ProfileHoverCard.js'
-import type { FilterOption } from '../src/core/types.js'
+import type { FilterOption, TagOption } from '../src/core/types.js'
 
 const DEFAULT_QUERY = `query GetProducts {
   products(limit: 5) {
@@ -78,11 +78,13 @@ function MultiSelect({
   options,
   selected,
   onChange,
+  counts,
 }: {
   label: string
   options: FilterOption[]
   selected: string[]
   onChange: (ids: string[]) => void
+  counts?: Record<string, number>
 }) {
   // Filter out empty/placeholder entries
   const validOptions = options.filter((o) => o.name.trim())
@@ -93,6 +95,7 @@ function MultiSelect({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
         {validOptions.map((opt) => {
           const isSelected = selected.includes(opt.id)
+          const count = counts?.[opt.id]
           return (
             <button
               key={opt.id}
@@ -111,11 +114,57 @@ function MultiSelect({
               }}
             >
               {opt.name}
+              {count != null && (
+                <span style={{ marginLeft: 4, opacity: 0.7 }}>({count})</span>
+              )}
             </button>
           )
         })}
       </div>
     </div>
+  )
+}
+
+function TagMultiSelect({
+  tags,
+  selected,
+  onChange,
+  counts,
+}: {
+  tags: TagOption[]
+  selected: string[]
+  onChange: (ids: string[]) => void
+  counts?: Record<string, number>
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, { label: string; options: TagOption[] }>()
+    for (const tag of tags) {
+      if (!tag.name.trim()) continue
+      const key = tag.tagType?.id ?? '_none'
+      const label = tag.tagType?.name ?? 'Other'
+      let group = map.get(key)
+      if (!group) {
+        group = { label, options: [] }
+        map.set(key, group)
+      }
+      group.options.push(tag)
+    }
+    return [...map.values()]
+  }, [tags])
+
+  return (
+    <>
+      {grouped.map((group) => (
+        <MultiSelect
+          key={group.label}
+          label={group.label}
+          options={group.options}
+          selected={selected}
+          onChange={onChange}
+          counts={counts}
+        />
+      ))}
+    </>
   )
 }
 
@@ -125,26 +174,44 @@ function ProfileSearch() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [page, setPage] = useState(0)
 
-  const where = useMemo(
-    () =>
-      buildProfileWhere({
-        types: selectedTypes,
-        sectors: selectedSectors,
-        statuses: selectedStatuses,
-        search: submittedSearch,
-      }),
-    [selectedTypes, selectedSectors, selectedStatuses, submittedSearch],
+  const profileFilters = useMemo(
+    () => ({
+      types: selectedTypes,
+      sectors: selectedSectors,
+      statuses: selectedStatuses,
+      tags: selectedTags,
+      search: submittedSearch,
+    }),
+    [selectedTypes, selectedSectors, selectedStatuses, selectedTags, submittedSearch],
+  )
+
+  const where = useMemo(() => buildProfileWhere(profileFilters), [profileFilters])
+
+  // Faceted counts
+  const facetQuery = useMemo(
+    () => (filters ? buildFacetCountQuery(profileFilters, filters) : null),
+    [profileFilters, filters],
+  )
+  const { data: rawFacetData } = useGridQuery<Record<string, { _count: number }>>(
+    facetQuery?.query ?? '',
+    undefined,
+    { enabled: !!facetQuery },
+  )
+  const facetCounts = useMemo(
+    () => (rawFacetData && facetQuery ? facetQuery.parse(rawFacetData) : undefined),
+    [rawFacetData, facetQuery],
   )
 
   // Reset to first page when filters change
   const whereKey = JSON.stringify(where)
   useEffect(() => { setPage(0) }, [whereKey])
 
-  const hasFilters = selectedTypes.length > 0 || selectedSectors.length > 0 || selectedStatuses.length > 0 || submittedSearch.trim() !== ''
+  const hasFilters = selectedTypes.length > 0 || selectedSectors.length > 0 || selectedStatuses.length > 0 || selectedTags.length > 0 || submittedSearch.trim() !== ''
 
   const {
     data: profiles,
@@ -161,6 +228,7 @@ function ProfileSearch() {
     setSelectedTypes([])
     setSelectedSectors([])
     setSelectedStatuses([])
+    setSelectedTags([])
     setSearch('')
     setSubmittedSearch('')
   }
@@ -215,9 +283,11 @@ function ProfileSearch() {
             </div>
           </div>
 
-          <MultiSelect label="Profile Type" options={filters.profileTypes} selected={selectedTypes} onChange={setSelectedTypes} />
-          <MultiSelect label="Sector" options={filters.profileSectors} selected={selectedSectors} onChange={setSelectedSectors} />
-          <MultiSelect label="Status" options={filters.profileStatuses} selected={selectedStatuses} onChange={setSelectedStatuses} />
+          <MultiSelect label="Profile Type" options={filters.profileTypes} selected={selectedTypes} onChange={setSelectedTypes} counts={facetCounts?.types} />
+          <MultiSelect label="Sector" options={filters.profileSectors} selected={selectedSectors} onChange={setSelectedSectors} counts={facetCounts?.sectors} />
+          <MultiSelect label="Status" options={filters.profileStatuses} selected={selectedStatuses} onChange={setSelectedStatuses} counts={facetCounts?.statuses} />
+
+          <TagMultiSelect tags={filters.tags} selected={selectedTags} onChange={setSelectedTags} counts={facetCounts?.tags} />
 
           {hasFilters && (
             <button
@@ -259,7 +329,8 @@ function ProfileSearch() {
         {profiles?.profileInfos && (
           <div>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-              Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + profiles.profileInfos.length} (page {page + 1})
+              Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + profiles.profileInfos.length}
+              {facetCounts != null ? ` of ${facetCounts.total}` : ''} (page {page + 1})
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>

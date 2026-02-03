@@ -30,3 +30,12 @@ export interface FilterMetadata {
   tagTypes: FilterOption[]
   tags: TagOption[]
 }
+
+/** Faceted counts per filter option, keyed by option id */
+export interface ProfileFacetCounts {
+  types: Record<string, number>
+  sectors: Record<string, number>
+  statuses: Record<string, number>
+  tags: Record<string, number>
+  total: number
+}
