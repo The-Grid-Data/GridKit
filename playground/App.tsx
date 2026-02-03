@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { keepPreviousData } from '@tanstack/react-query'
 import { useGridQuery } from '../src/hooks/useGridQuery.js'
 import { useGridFilterOptions } from '../src/hooks/useGridFilterOptions.js'
 import { buildProfileWhere } from '../src/core/filters.js'
@@ -13,8 +14,10 @@ const DEFAULT_QUERY = `query GetProducts {
   }
 }`
 
-const PROFILE_SEARCH_QUERY = `query SearchProfiles($where: ProfileInfosBoolExp, $limit: Int) {
-  profileInfos(where: $where, limit: $limit, order_by: {name: Asc}) {
+const PAGE_SIZE = 25
+
+const PROFILE_SEARCH_QUERY = `query SearchProfiles($where: ProfileInfosBoolExp, $limit: Int, $offset: Int) {
+  profileInfos(where: $where, limit: $limit, offset: $offset, order_by: {name: Asc}) {
     id
     name
     profileType { id name }
@@ -123,6 +126,7 @@ function ProfileSearch() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
+  const [page, setPage] = useState(0)
 
   const where = useMemo(
     () =>
@@ -135,6 +139,10 @@ function ProfileSearch() {
     [selectedTypes, selectedSectors, selectedStatuses, submittedSearch],
   )
 
+  // Reset to first page when filters change
+  const whereKey = JSON.stringify(where)
+  useEffect(() => { setPage(0) }, [whereKey])
+
   const hasFilters = selectedTypes.length > 0 || selectedSectors.length > 0 || selectedStatuses.length > 0 || submittedSearch.trim() !== ''
 
   const {
@@ -144,8 +152,8 @@ function ProfileSearch() {
     isFetching: searchFetching,
   } = useGridQuery<{ profileInfos: Array<Record<string, unknown>> }>(
     PROFILE_SEARCH_QUERY,
-    { where, limit: 25 },
-    { enabled: hasFilters },
+    { where, limit: PAGE_SIZE, offset: page * PAGE_SIZE },
+    { enabled: hasFilters, placeholderData: keepPreviousData },
   )
 
   const clearAll = () => {
@@ -250,7 +258,7 @@ function ProfileSearch() {
         {profiles?.profileInfos && (
           <div>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-              {profiles.profileInfos.length} result{profiles.profileInfos.length !== 1 ? 's' : ''}{profiles.profileInfos.length === 25 ? ' (limit reached)' : ''}
+              Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + profiles.profileInfos.length} (page {page + 1})
             </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
@@ -272,6 +280,40 @@ function ProfileSearch() {
                 ))}
               </tbody>
             </table>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  cursor: page === 0 ? 'default' : 'pointer',
+                  borderRadius: 4,
+                  border: '1px solid #ccc',
+                  background: '#fff',
+                  color: page === 0 ? '#ccc' : '#333',
+                }}
+              >
+                Prev
+              </button>
+              <span style={{ fontSize: 12, color: '#666' }}>Page {page + 1}</span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={profiles.profileInfos.length < PAGE_SIZE}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  cursor: profiles.profileInfos.length < PAGE_SIZE ? 'default' : 'pointer',
+                  borderRadius: 4,
+                  border: '1px solid #ccc',
+                  background: '#fff',
+                  color: profiles.profileInfos.length < PAGE_SIZE ? '#ccc' : '#333',
+                }}
+              >
+                Next
+              </button>
+              {searchFetching && <span style={{ fontSize: 12, color: '#999' }}>Loading...</span>}
+            </div>
           </div>
         )}
       </div>
