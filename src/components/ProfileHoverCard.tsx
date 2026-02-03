@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useCallback, useLayoutEffect, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useGridConfig } from './GridProvider.js'
 import { executeQuery } from '../core/client.js'
@@ -46,7 +46,10 @@ export function ProfileHoverCard({
   const config = useGridConfig()
   const [visible, setVisible] = useState(false)
   const [fetchEnabled, setFetchEnabled] = useState(false)
+  const [cardPos, setCardPos] = useState<{ top: number; left: number } | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const { data } = useQuery<ProfileHoverData>({
     queryKey: gridKeys.profileHover(profileId),
@@ -61,10 +64,27 @@ export function ProfileHoverCard({
   const profile = data?.profileInfos?.[0] ?? null
   const thumbnailUrl = getThumbnailUrl(profile?.root?.media)
 
+  const CARD_WIDTH = 280
+  const GAP = 8
+
   const handleMouseEnter = useCallback(() => {
     setFetchEnabled(true)
     timerRef.current = setTimeout(() => setVisible(true), delay)
   }, [delay])
+
+  // Position the card after it renders so we can use its actual height
+  useLayoutEffect(() => {
+    if (!visible || !wrapperRef.current || !cardRef.current) return
+    const trigger = wrapperRef.current.getBoundingClientRect()
+    const cardHeight = cardRef.current.offsetHeight
+    const above = trigger.top >= cardHeight + GAP
+    const top = above
+      ? trigger.top - cardHeight - GAP
+      : trigger.bottom + GAP
+    let left = trigger.left + trigger.width / 2 - CARD_WIDTH / 2
+    left = Math.max(8, Math.min(left, window.innerWidth - CARD_WIDTH - 8))
+    setCardPos({ top, left })
+  }, [visible, profile])
 
   const handleMouseLeave = useCallback(() => {
     if (timerRef.current) {
@@ -72,24 +92,26 @@ export function ProfileHoverCard({
       timerRef.current = null
     }
     setVisible(false)
+    setCardPos(null)
   }, [])
 
   return (
     <div
-      style={{ position: 'relative', display: 'inline-block' }}
+      ref={wrapperRef}
+      style={{ display: 'inline-block' }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {children}
       {visible && profile && (
         <div
+          ref={cardRef}
           style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            marginBottom: 8,
-            width: 280,
+            position: 'fixed',
+            top: cardPos?.top ?? -9999,
+            left: cardPos?.left ?? -9999,
+            width: CARD_WIDTH,
+            visibility: cardPos ? 'visible' : 'hidden',
             background: '#fff',
             border: '1px solid #e0e0e0',
             borderRadius: 8,
