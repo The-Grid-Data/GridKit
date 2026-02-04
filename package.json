@@ -52,6 +52,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "vite playground",
+    "build:playground": "GITHUB_PAGES=true vite build playground",
     "dev:build": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
